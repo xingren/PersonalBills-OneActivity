@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical" >
+    
+    <LinearLayout        
+         android:layout_width="wrap_content"
+    	 android:layout_height="wrap_content"
+         android:orientation="horizontal"
+        >
+        
+         <Button
+        android:id="@+id/cancle_btn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/cancel" />
+        
+         <Button
+        android:id="@+id/confirm_btn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/OK_button" />
+        
+        
+    </LinearLayout>
+    
+     <EditText
+        android:id="@+id/activity_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        
+       
+        android:layout_marginTop="40dp"
+        android:ems="10"
+        android:hint="@string/activity_textivew" />
+
+   
+
+    <EditText
+        android:id="@+id/date_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       
+        android:layout_marginTop="28dp"
+        android:ems="10"
+        android:hint="@string/data_textivew"
+        android:inputType="date" >
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/cost_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       
+        android:layout_marginTop="19dp"
+        android:ems="10"
+        android:hint="@string/expenditure_textivew"
+        android:inputType="numberDecimal" />
+
+    <EditText
+        android:id="@+id/info_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       
+        android:layout_marginTop="42dp"
+        android:ems="10"
+        android:hint="@string/info"
+        android:inputType="textMultiLine" />
+
+
+
+</LinearLayout>
