@@ -4,7 +4,9 @@ import net.sqlcipher.database.SQLiteDatabase;
 
 
 import android.os.Bundle;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.FragmentTransaction;
 import android.view.Menu;
 
 import com.icetea.personalbills.sql.AccountsSQLCipherHelper;
@@ -16,6 +18,7 @@ public class MainActivity extends Activity  {
 	private String BILLS_DB_URI = VariableValue.BillsDB_URI;
 	private String ACCOUNTS_DB_URI = VariableValue.ACCOUNT_DB_URI;
 
+	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -24,6 +27,17 @@ public class MainActivity extends Activity  {
 		SQLiteDatabase.loadLibs(this);
 		BillsSQLCipherHelper billsDbHelper = new BillsSQLCipherHelper(this, BILLS_DB_URI , null, 1);
 		AccountsSQLCipherHelper accountsDbHelper = new AccountsSQLCipherHelper(this, ACCOUNTS_DB_URI , null, 1);
+		
+		FragmentTransaction transaction = getFragmentManager().beginTransaction();
+		
+		DayFragment dayFragment = new DayFragment();
+		
+		
+		transaction.replace(R.id.fragment_id, dayFragment);
+		transaction.show(dayFragment);
+		
+		transaction.commit();
+		
 		
 	}
 
