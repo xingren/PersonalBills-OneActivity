@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="title_color">#FB8521</color>
+    <color name="dayview_bg_color">#A2A2A2</color>
+    <color name="dayview_hour_text_color">#80408080</color>
+    <color name="dayview_hour_cell_color">#ffffff</color>
+    <color name="dayview_event_cell_color">#C880ff00</color>
+    <color name="dayview_event_text_color">#000000</color>
+    <color name="dayview_event_select_color">#800080ff</color>
+</resources>
