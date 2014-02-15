@@ -17,7 +17,7 @@ public class Controler {
 	}
 	
 	private Context mContext;
-	private Controler mControler = null;
+	private static Controler mControler = null;
 	
 	private WeakHashMap<Integer, EventHandler> handlers;
 	
@@ -25,7 +25,7 @@ public class Controler {
 		mContext = context;
 	}
 	
-	public Controler getInstance(Context context){
+	public static Controler getInstance(Context context){
 		if(mControler == null)
 			mControler = new Controler(context);
 		return mControler;

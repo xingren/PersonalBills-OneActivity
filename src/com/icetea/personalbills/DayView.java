@@ -9,11 +9,13 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ViewSwitcher;
 
 public class DayView extends View{
 
@@ -64,16 +66,33 @@ public class DayView extends View{
 	
 	
 	//objects about draw
-	private Paint mHourTextPaint;
-	private Paint mHourCellPaint;
+	private Paint mTextPaint;
+	private Paint mCellPaint;
 	private Paint mEventCellPaint;
 	
 	Rect rect = new Rect();
 	private Paint mEventTextPaint;
 	private Resources resources;
+	private int mHourCellWidth;
 	
+	private float mLines[];
+	private Paint mLinesPaint;
+	private int mGridHorizontalLinesColor;
+	private Context mControler;
+	private ViewSwitcher mViewSitcher;
 	
-	
+	public DayView(Context context,Controler controler,ViewSwitcher viewSwitcher,int daysNum){
+		super(context);
+		mContext = context;
+		mControler = context;
+		mViewSitcher = viewSwitcher;
+		mDaysNum = daysNum;
+		
+		
+		resources = mContext.getResources();
+		
+		initPaint();
+	}
 	
 	public DayView(Context context) {
 		super(context);
@@ -105,6 +124,14 @@ public class DayView extends View{
 		
 	}
 	
+	public int getmDaysNum() {
+		return mDaysNum;
+	}
+
+	public void setDaysNum(int mDaysNum) {
+		this.mDaysNum = mDaysNum;
+	}
+
 	@Override
 	protected void onDraw(Canvas canvas) {
 		// TODO Auto-generated method stub
@@ -138,26 +165,28 @@ public class DayView extends View{
 		canvas.clipRect(rect);
 		
 		
-		
+		doDraw(canvas);
 		
 		canvas.restore();
 		
-		doDraw(canvas);
+		
 		
 		 //for()
 	}
 	
 	void initPaint(){
 		
-		mEventSelectedPaint = new Paint();
+		//mEventSelectedPaint = new Paint();
 		
-		mHourTextPaint = new Paint();
+		mTextPaint = new Paint();
 		
-		mHourCellPaint = new Paint();
+		mCellPaint = new Paint();
 		
-		mEventCellPaint = new Paint();
+		//mEventCellPaint = new Paint();
 		
-		mEventTextPaint = new Paint();
+		//mEventTextPaint = new Paint();
+		
+		mLinesPaint = new Paint();
 		
 		VIEW_BG_COLOR = resources.getColor(R.color.dayview_bg_color);
 		HOUR_CELL_BG_COLOR = resources.getColor(R.color.dayview_hour_cell_color);
@@ -168,6 +197,10 @@ public class DayView extends View{
 		EVENT_TEXT_COLOR = resources.getColor(R.color.dayview_event_text_color);
 		
 		
+		
+		int mGridLinesNum = 24 + 1 + mDaysNum + 1;
+		mLines = new float[mGridLinesNum*4];
+		mGridHorizontalLinesColor = getResources().getColor(R.color.grid_background_line_color);
 	}
 
 	@Override
@@ -178,12 +211,12 @@ public class DayView extends View{
 	}
 	
 	private void setPaints(){
-		mEventSelectedPaint.setColor(EVENT_CELL_SELECT_COLOR);
-		mEventCellPaint.setColor(EVENT_CELL_BG_COLOR);
+		//mEventSelectedPaint.setColor(EVENT_CELL_SELECT_COLOR);
+		//mEventCellPaint.setColor(EVENT_CELL_BG_COLOR);
 		
-		mHourTextPaint.setColor(HOUR_TEXT_COLOR);
-		mHourCellPaint.setColor(HOUR_CELL_BG_COLOR);
-		mHourTextPaint.setTextSize(mHourTextHeight);
+		mTextPaint.setColor(HOUR_TEXT_COLOR);
+		mCellPaint.setColor(HOUR_CELL_BG_COLOR);
+		mTextPaint.setTextSize(mHourTextHeight);
 		
 	}
 	
@@ -210,12 +243,13 @@ public class DayView extends View{
 		mFirstHourCell = 0;
 		mDayHeader = 0;
 		mViewStartX = 0;
-		
+		mHourCellWidth = (int) (mViewWidth*hourSideWidthPercent);
 	}
 	
 	
 	private void doDraw(Canvas canvas){
 		
+		drawGridBackground(canvas);
 		drawHours(canvas);
 		
 		for(int i = 0;i < mDaysNum;i++){
@@ -238,7 +272,7 @@ public class DayView extends View{
 				
 		for (int i = 0 ;i < 24 ;i++){
 			
-			canvas.drawText(mHourStrings[i], HOURS_LEFT_MARGIN, y,mHourTextPaint);
+			canvas.drawText(mHourStrings[i], HOURS_LEFT_MARGIN, y,mTextPaint);
 			
 			y += mHourCellHight;
 		}
@@ -247,5 +281,41 @@ public class DayView extends View{
 	
 	private void drawGridBackground(Canvas canvas) {
 		
+		Style saveStyle = mLinesPaint.getStyle();
+		mLinesPaint.setAntiAlias(false);//关闭抗锯齿选项，节约性能
+		
+		mLinesPaint.setColor(mGridHorizontalLinesColor);
+		float endX = computDayStartX(mDaysNum);				
+		int linesIndex = 0;
+		int deltaY = mHourCellHight + HOUR_GAP;
+		float y = 0;
+		float endY = HOUR_GAP + 24*(mHourCellHight + HOUR_GAP);
+		float startY = 0;
+		float x = 0;
+		for(int i = 0;i <= 24;i++){
+			mLines[linesIndex++] = HOURS_LEFT_MARGIN; 
+			mLines[linesIndex++] = y;
+			mLines[linesIndex++] = endX;
+			mLines[linesIndex++] = y;
+			y += deltaY;
+		}
+		
+		for (int day = 0;day <= mDaysNum;day++){
+			x = computDayStartX(day);
+			mLines[linesIndex++] = x;
+			mLines[linesIndex++] = startY;
+			mLines[linesIndex++] = x;
+			mLines[linesIndex++] = endY;
+		}
+		
+		canvas.drawLines(mLines,0,linesIndex, mLinesPaint);
+		
+		mLinesPaint.setAntiAlias(true);
+		mLinesPaint.setStyle(saveStyle);
+	}
+	
+	private float computDayStartX(int day){
+		int dayXLen = mViewWidth - mHourCellWidth;
+		return day*dayXLen/mDaysNum + mHourCellWidth;
 	}
 }

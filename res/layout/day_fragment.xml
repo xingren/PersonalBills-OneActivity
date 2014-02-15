@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-    <com.icetea.personalbills.DayView
+    <ViewSwitcher
         
-        android:id="@+id/day_view_id"
+        android:id="@+id/view_switcher_id"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
          

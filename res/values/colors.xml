@@ -7,4 +7,5 @@
     <color name="dayview_event_cell_color">#C880ff00</color>
     <color name="dayview_event_text_color">#000000</color>
     <color name="dayview_event_select_color">#800080ff</color>
+    <color name="grid_background_line_color">#BE400040</color>
 </resources>

@@ -20,6 +20,7 @@ public final class R {
         public static final int dayview_event_text_color=0x7f050005;
         public static final int dayview_hour_cell_color=0x7f050003;
         public static final int dayview_hour_text_color=0x7f050002;
+        public static final int grid_background_line_color=0x7f050007;
         public static final int title_color=0x7f050000;
     }
     public static final class dimen {
@@ -45,9 +46,9 @@ public final class R {
         public static final int date_id=0x7f0a0001;
         public static final int date_text=0x7f0a0006;
         public static final int day_id=0x7f0a0000;
-        public static final int day_view_id=0x7f0a0009;
         public static final int fragment_id=0x7f0a0002;
         public static final int info_text=0x7f0a0008;
+        public static final int view_switcher_id=0x7f0a0009;
     }
     public static final class layout {
         public static final int actionbar_pulldown_item=0x7f030000;
