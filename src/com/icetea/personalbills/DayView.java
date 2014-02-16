@@ -1,11 +1,13 @@
 package com.icetea.personalbills;
 
 
+import com.icetea.personalbills.value.ConstantValue;
 import com.icetea.personalbills_oneactivity.R;
 
 import android.R.integer;
 import android.content.Context;
 import android.content.res.Resources;
+import android.drm.DrmStore.Action;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -13,11 +15,12 @@ import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ViewSwitcher;
 
-public class DayView extends View{
+public class DayView extends View implements ConstantValue{
 
 	private static final int HOURS_TOP_MARGIN = 0;
 	private static final float HOURS_LEFT_MARGIN = 0;
@@ -78,51 +81,29 @@ public class DayView extends View{
 	private float mLines[];
 	private Paint mLinesPaint;
 	private int mGridHorizontalLinesColor;
-	private Context mControler;
+	private Controler mControler;
 	private ViewSwitcher mViewSitcher;
+	
+	private GestureDetector mGestureDetector;
+	private int mTouchMode;
+	private boolean mStartScrolling;
+	
+	
 	
 	public DayView(Context context,Controler controler,ViewSwitcher viewSwitcher,int daysNum){
 		super(context);
 		mContext = context;
-		mControler = context;
+		mControler = controler;
 		mViewSitcher = viewSwitcher;
 		mDaysNum = daysNum;
 		
 		
 		resources = mContext.getResources();
 		
-		initPaint();
+		init();
 	}
 	
-	public DayView(Context context) {
-		super(context);
-		mContext = context;
-		resources = mContext.getResources();
-		// TODO Auto-generated constructor stub
-	}
 	
-	public DayView(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		mContext = context;
-		resources = mContext.getResources();
-		initPaint();
-	}
-	public DayView(Context context, AttributeSet attrs, int defStyleAttr) {
-		super(context, attrs, defStyleAttr);
-		// TODO Auto-generated constructor stub
-		
-		mContext = context;
-		resources = mContext.getResources();
-	}
-	
-	public DayView(Context context,int mDaysNum){
-		
-		super(context);
-		mContext = context;
-		resources = mContext.getResources();
-		this.mDaysNum = mDaysNum;
-		
-	}
 	
 	public int getmDaysNum() {
 		return mDaysNum;
@@ -150,7 +131,7 @@ public class DayView extends View{
 			
 		int translateY = -mViewStartY + mDayHeader;
 		int translateX = -mViewStartX;
-		canvas.translate(translateY, translateX);
+		canvas.translate(translateX,translateY);
 		
 		
 		rect.top = mFirstHourCell - translateY;
@@ -174,7 +155,7 @@ public class DayView extends View{
 		 //for()
 	}
 	
-	void initPaint(){
+	void init(){
 		
 		//mEventSelectedPaint = new Paint();
 		
@@ -203,12 +184,7 @@ public class DayView extends View{
 		mGridHorizontalLinesColor = getResources().getColor(R.color.grid_background_line_color);
 	}
 
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		// TODO Auto-generated method stub
-		Log.i("DayView", event.toString());
-		return super.onTouchEvent(event);
-	}
+
 	
 	private void setPaints(){
 		//mEventSelectedPaint.setColor(EVENT_CELL_SELECT_COLOR);
@@ -239,7 +215,7 @@ public class DayView extends View{
 		
 		mHourTextHeight = (int) (mHourCellHight * 0.25);
 		
-		mViewStartY = 0;
+		mViewStartY = 900;
 		mFirstHourCell = 0;
 		mDayHeader = 0;
 		mViewStartX = 0;
@@ -288,7 +264,7 @@ public class DayView extends View{
 		float endX = computDayStartX(mDaysNum);				
 		int linesIndex = 0;
 		int deltaY = mHourCellHight + HOUR_GAP;
-		float y = 0;
+		float y = HOUR_GAP;
 		float endY = HOUR_GAP + 24*(mHourCellHight + HOUR_GAP);
 		float startY = 0;
 		float x = 0;
@@ -318,4 +294,77 @@ public class DayView extends View{
 		int dayXLen = mViewWidth - mHourCellWidth;
 		return day*dayXLen/mDaysNum + mHourCellWidth;
 	}
+	
+	class BillGestureDetectorListener extends GestureDetector.SimpleOnGestureListener{
+
+		@Override
+		public void onLongPress(MotionEvent e) {
+			// TODO Auto-generated method stub
+			super.onLongPress(e);
+		}
+
+		@Override
+		public boolean onScroll(MotionEvent e1, MotionEvent e2,
+				float distanceX, float distanceY) {
+			// TODO Auto-generated method stub
+			
+			
+			DayView.this.onScroll(e1,e2,distanceX,distanceY);
+			
+			return true;
+		}
+
+		@Override
+		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+				float velocityY) {
+			// TODO Auto-generated method stub
+			return super.onFling(e1, e2, velocityX, velocityY);
+		}
+
+		@Override
+		public boolean onDown(MotionEvent e) {
+			// TODO Auto-generated method stub
+			return super.onDown(e);
+		}
+
+		@Override
+		public boolean onSingleTapUp(MotionEvent e) {
+			// TODO Auto-generated method stub
+			return super.onSingleTapUp(e);
+		}
+		
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		// TODO Auto-generated method stub
+		Log.i("DayView", event.toString());
+		
+		
+		int action = event.getAction();
+		switch(action){
+		
+		case MotionEvent.ACTION_DOWN:
+			
+			mStartScrolling = true;
+			
+			if((mTouchMode & TOUCH_MODE_VSCROLL) != 0){
+				
+			}
+			
+			break;
+		
+		
+		}
+		
+		
+		return true;
+	}
+	public void onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
+			float distanceY) {
+		// TODO Auto-generated method stub
+		
+		
+		
+	}
+	
 }
