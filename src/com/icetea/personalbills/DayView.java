@@ -13,17 +13,20 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
+import android.os.Debug;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 public class DayView extends View implements ConstantValue{
 
 	private static final int HOURS_TOP_MARGIN = 0;
 	private static final float HOURS_LEFT_MARGIN = 0;
+	private static final boolean DEBUG = false;
 	Paint paint;
 	Paint mEventSelectedPaint;
 	String TAG = "DayView";
@@ -51,6 +54,9 @@ public class DayView extends View implements ConstantValue{
 	private int HOUR_GAP;
 	private int mViewStartX;
 	private float mEventCellWidth;
+	
+	private float mScrollYFactor = 0.5f;
+	
 	//colors
 	private int VIEW_BG_COLOR;
 	private int HOUR_TEXT_COLOR;
@@ -87,7 +93,12 @@ public class DayView extends View implements ConstantValue{
 	private GestureDetector mGestureDetector;
 	private int mTouchMode;
 	private boolean mStartScrolling;
-	
+	private int mInitialScrollerY;
+	private int mInitialScrollerX;
+	private float mStartScrollY;
+	private boolean mSaveStartScrollY;
+	private int mMaxViewStartY;
+	private int mGridAreaHight;
 	
 	
 	public DayView(Context context,Controler controler,ViewSwitcher viewSwitcher,int daysNum){
@@ -113,47 +124,7 @@ public class DayView extends View implements ConstantValue{
 		this.mDaysNum = mDaysNum;
 	}
 
-	@Override
-	protected void onDraw(Canvas canvas) {
-		// TODO Auto-generated method stub
-		super.onDraw(canvas);
-		
-		setDrawAttribute();
-		setPaints();
-		
-		
-		
-		canvas.drawColor(Color.WHITE);
-		//canvas.drawText("23121", 0, 40, paint);
-		
-		//canvas.drawRect(0,0,getWidth(),getHeight(),paint);
-		// canvas.drawLine( width * hourSideWidthPercent, 0, width * hourSideWidthPercent, height, paint);
-			
-		int translateY = -mViewStartY + mDayHeader;
-		int translateX = -mViewStartX;
-		canvas.translate(translateX,translateY);
-		
-		
-		rect.top = mFirstHourCell - translateY;
-		rect.bottom = mViewHeight - translateY;
-		rect.left = 0;
-		rect.right = mViewWidth;
-			
-		canvas.save();
-		
-		//首先锁定一个clirect
-		
-		canvas.clipRect(rect);
-		
-		
-		doDraw(canvas);
-		
-		canvas.restore();
-		
-		
-		
-		 //for()
-	}
+	
 	
 	void init(){
 		
@@ -182,6 +153,8 @@ public class DayView extends View implements ConstantValue{
 		int mGridLinesNum = 24 + 1 + mDaysNum + 1;
 		mLines = new float[mGridLinesNum*4];
 		mGridHorizontalLinesColor = getResources().getColor(R.color.grid_background_line_color);
+		
+		mGestureDetector = new GestureDetector(mContext, new BillGestureDetectorListener());
 	}
 
 
@@ -201,7 +174,7 @@ public class DayView extends View implements ConstantValue{
 		mViewWidth = getWidth();
 		mViewHeight = getHeight();
 		
-		hourSideWidthPercent = 0.15f;
+		hourSideWidthPercent = 0.1f;
 		
 		eventsCellWidthPercent = 1 - hourSideWidthPercent;
 		
@@ -215,11 +188,14 @@ public class DayView extends View implements ConstantValue{
 		
 		mHourTextHeight = (int) (mHourCellHight * 0.25);
 		
-		mViewStartY = 900;
-		mFirstHourCell = 0;
-		mDayHeader = 0;
-		mViewStartX = 0;
+		mGridAreaHight = mViewHeight;
+		
+		mMaxViewStartY = HOUR_GAP + 24*(mHourCellHight + HOUR_GAP) - mGridAreaHight;
+		
+		
 		mHourCellWidth = (int) (mViewWidth*hourSideWidthPercent);
+		
+		mScrollYFactor = 0.1f;
 	}
 	
 	
@@ -250,7 +226,7 @@ public class DayView extends View implements ConstantValue{
 			
 			canvas.drawText(mHourStrings[i], HOURS_LEFT_MARGIN, y,mTextPaint);
 			
-			y += mHourCellHight;
+			y += mHourCellHight + HOUR_GAP;
 		}
 		
 	}
@@ -295,6 +271,19 @@ public class DayView extends View implements ConstantValue{
 		return day*dayXLen/mDaysNum + mHourCellWidth;
 	}
 	
+	
+	private float getArvgY(MotionEvent ev) {
+		float y = 0;
+		int count = ev.getPointerCount();
+		//Log.i(TAG + " getArvgY","points count:" + ev.getPointerCount());
+		for(int i = 0;i < count;i++){
+		//	Log.i(TAG + " getArvgY","" + ev.getY(i));
+			y += ev.getY(i);
+		}
+		
+		return y/count;
+	}
+	
 	class BillGestureDetectorListener extends GestureDetector.SimpleOnGestureListener{
 
 		@Override
@@ -309,7 +298,7 @@ public class DayView extends View implements ConstantValue{
 			// TODO Auto-generated method stub
 			
 			
-			DayView.this.onScroll(e1,e2,distanceX,distanceY);
+			DayView.this.doScroll(e1,e2,distanceX,distanceY);
 			
 			return true;
 		}
@@ -337,34 +326,154 @@ public class DayView extends View implements ConstantValue{
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		// TODO Auto-generated method stub
-		Log.i("DayView", event.toString());
+		//Log.i("DayView", event.toString());
 		
 		
 		int action = event.getAction();
 		switch(action){
 		
 		case MotionEvent.ACTION_DOWN:
-			
+			Log.i(TAG,"ACTION_DOWN");
 			mStartScrolling = true;
+			mSaveStartScrollY = true;
+			mGestureDetector.onTouchEvent(event);
+			Log.i(TAG, "getY " + getArvgY(event));
+			mTouchMode = TOUCH_MODE_DOWN;
 			
-			if((mTouchMode & TOUCH_MODE_VSCROLL) != 0){
-				
-			}
+			
+		
+			break;
+		case MotionEvent.ACTION_MOVE:
+			
+			mGestureDetector.onTouchEvent(event);
 			
 			break;
-		
 		
 		}
 		
 		
 		return true;
 	}
-	public void onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
-			float distanceY) {
+	
+	@Override
+	protected void onDraw(Canvas canvas) {
 		// TODO Auto-generated method stub
+		super.onDraw(canvas);
+		
+		setDrawAttribute();
+		setPaints();
 		
 		
 		
+		canvas.drawColor(Color.WHITE);
+		//canvas.drawText("23121", 0, 40, paint);
+		
+		//canvas.drawRect(0,0,getWidth(),getHeight(),paint);
+		// canvas.drawLine( width * hourSideWidthPercent, 0, width * hourSideWidthPercent, height, paint);
+			
+		int translateY = -mViewStartY + mDayHeader;
+		int translateX = -mViewStartX;
+		canvas.translate(translateX,translateY);
+		
+		
+		rect.top = mFirstHourCell - translateY;
+		rect.bottom = mViewHeight - translateY;
+		rect.left = 0;
+		rect.right = mViewWidth;
+			
+		canvas.save();
+		
+		//首先锁定一个clirect
+		
+		canvas.clipRect(rect);
+		
+		
+		doDraw(canvas);
+		
+		canvas.restore();
+		
+		
+		
+		 //for()
+	}
+	public void doScroll(MotionEvent e1, MotionEvent e2, float detalX,
+			float detalY) {
+		// TODO Auto-generated method stub
+		//Log.i(TAG + " onScroll",
+			//	"arvg Y:" + getArvgY(e2) + "　center Y:"
+				//		+ (e2.getY(0) + e2.getY(e2.getPointerCount() - 1) / 2));
+		if(mStartScrolling){
+			mInitialScrollerX = 0;
+			mInitialScrollerY = 0;
+			
+			mStartScrolling = false;
+		}
+		
+		mInitialScrollerX += detalX;
+		mInitialScrollerY += detalY;
+		
+		int distanceX = mInitialScrollerX;
+		int distanceY = mInitialScrollerY;
+		
+		float focusY = getArvgY(e2);
+		
+		if(mSaveStartScrollY){
+			
+			mSaveStartScrollY = false;
+			mStartScrollY = focusY - mDayHeader ;
+			
+		}
+		
+		if((mTouchMode & TOUCH_MODE_DOWN) != 0) {
+			
+			//判断是上下滚动还是左右滚动
+			int absDistanceX = Math.abs(distanceX);
+			int absDistanceY = Math.abs(distanceY);
+			
+			if(absDistanceX > absDistanceY){
+				
+				if(DEBUG){
+					Log.i(TAG, "doScroll absDistanceX > absDistanceY, left-right scroll");
+				}
+				
+				mTouchMode = TOUCH_MODE_HSCROLL;
+			}else{
+				mTouchMode = TOUCH_MODE_VSCROLL;
+			}
+					
+		}else if((mTouchMode & TOUCH_MODE_HSCROLL) != 0){
+			
+			//Toast.makeText(mContext, "left-right scroll", Toast.LENGTH_SHORT).show();
+			Log.i(TAG, "left-right scroll");
+		}
+		
+		if((mTouchMode & TOUCH_MODE_VSCROLL) != 0){
+			mViewStartY = (int)(mViewStartY + (mStartScrollY - focusY)*mScrollYFactor );
+			
+			
+			if(mViewStartY < 0){
+				mViewStartY = 0;
+				
+				Log.i(TAG,"mViewStartY < 0 mStartScrolly " + mStartScrollY);
+			}			
+			else if(mViewStartY > mMaxViewStartY){
+				mViewStartY = mMaxViewStartY;
+				
+				Log.i(TAG,"mViewStartY > mMaxViewStart mStartScrolly " + mStartScrollY);
+			}
+			
+		}
+	    invalidate();
+		
+		
+	}
+	
+	void remeasure(int width,int height){
+		setDrawAttribute();
+		mViewStartY = 900;
+		mFirstHourCell = 0;
+		mDayHeader = 0;
+		mViewStartX = 0;
 	}
 	
 }

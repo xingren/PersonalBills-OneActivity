@@ -9,4 +9,5 @@ public interface ConstantValue {
 	final public static int ACTION_BAR_SPINNER_BILLS_INDEX = 3;
 	final public static int TOUCH_MODE_HSCROLL = 0x40;
 	final public static int TOUCH_MODE_VSCROLL = 0x80;
+	final public static int TOUCH_MODE_DOWN = 0x10;
 }
