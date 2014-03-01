@@ -14,11 +14,14 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.os.Debug;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.EdgeEffect;
+import android.widget.OverScroller;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
@@ -101,6 +104,11 @@ public class DayView extends View implements ConstantValue{
 	private int mGridAreaHight;
 	
 	
+	EdgeEffect mTopEdgeEffect;
+	EdgeEffect mBottomEdgeEffect;
+	Handler mHandler;
+	OverScroller mScroller;
+	
 	public DayView(Context context,Controler controler,ViewSwitcher viewSwitcher,int daysNum){
 		super(context);
 		mContext = context;
@@ -110,6 +118,11 @@ public class DayView extends View implements ConstantValue{
 		
 		
 		resources = mContext.getResources();
+		
+		mTopEdgeEffect = new EdgeEffect(mContext);
+		mBottomEdgeEffect = new EdgeEffect(mContext);
+		mHandler = getHandler();
+		mScroller = new OverScroller(mContext);
 		
 		init();
 	}
@@ -124,6 +137,15 @@ public class DayView extends View implements ConstantValue{
 		this.mDaysNum = mDaysNum;
 	}
 
+	class ContinueScroll implements Runnable{
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
 	
 	
 	void init(){
@@ -157,7 +179,29 @@ public class DayView extends View implements ConstantValue{
 		mGestureDetector = new GestureDetector(mContext, new BillGestureDetectorListener());
 	}
 
+	void remeasure(int width,int height){
+		setDrawAttribute();
+		mFirstHourCell = 0;
+		mDayHeader = 0;
+		mViewStartX = 0;
+		mViewStartY = 0;
+	}
 
+
+
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		// TODO Auto-generated method stub
+		super.onSizeChanged(w, h, oldw, oldh);
+		Log.i(TAG, "onSizeChanged");
+		
+		
+		
+		mTopEdgeEffect.setSize(w, h);
+		
+		remeasure(w, h);
+		setPaints();
+	}
 	
 	private void setPaints(){
 		//mEventSelectedPaint.setColor(EVENT_CELL_SELECT_COLOR);
@@ -195,7 +239,7 @@ public class DayView extends View implements ConstantValue{
 		
 		mHourCellWidth = (int) (mViewWidth*hourSideWidthPercent);
 		
-		mScrollYFactor = 0.1f;
+		mScrollYFactor = 1.2f;
 	}
 	
 	
@@ -307,7 +351,10 @@ public class DayView extends View implements ConstantValue{
 		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
 				float velocityY) {
 			// TODO Auto-generated method stub
-			return super.onFling(e1, e2, velocityX, velocityY);
+			
+			DayView.this.doFling(e1, e2, velocityX, velocityY);
+			
+			return true;
 		}
 
 		@Override
@@ -348,6 +395,15 @@ public class DayView extends View implements ConstantValue{
 			mGestureDetector.onTouchEvent(event);
 			
 			break;
+			
+		case MotionEvent.ACTION_UP:
+			Log.i(TAG, "ACTION_UP");
+			mTopEdgeEffect.finish();
+			mTopEdgeEffect.onRelease();
+			
+			invalidate();
+			
+			break;
 		
 		}
 		
@@ -360,9 +416,9 @@ public class DayView extends View implements ConstantValue{
 		// TODO Auto-generated method stub
 		super.onDraw(canvas);
 		
-		setDrawAttribute();
-		setPaints();
+		Log.i(TAG, "onDraw");
 		
+
 		
 		
 		canvas.drawColor(Color.WHITE);
@@ -392,16 +448,16 @@ public class DayView extends View implements ConstantValue{
 		
 		canvas.restore();
 		
-		
+		if(!mTopEdgeEffect.isFinished()){
+			mTopEdgeEffect.draw(canvas);
+		}
 		
 		 //for()
 	}
 	public void doScroll(MotionEvent e1, MotionEvent e2, float detalX,
 			float detalY) {
 		// TODO Auto-generated method stub
-		//Log.i(TAG + " onScroll",
-			//	"arvg Y:" + getArvgY(e2) + "　center Y:"
-				//		+ (e2.getY(0) + e2.getY(e2.getPointerCount() - 1) / 2));
+		//Log.i(TAG, "e1.x " + e1.getX() + " e1.y " + e1.getY() + " e2.x " + e2.getX() + " e2.y " + e2.getY());
 		if(mStartScrolling){
 			mInitialScrollerX = 0;
 			mInitialScrollerY = 0;
@@ -423,6 +479,7 @@ public class DayView extends View implements ConstantValue{
 			mStartScrollY = focusY - mDayHeader ;
 			
 		}
+		
 		
 		if((mTouchMode & TOUCH_MODE_DOWN) != 0) {
 			
@@ -448,12 +505,13 @@ public class DayView extends View implements ConstantValue{
 		}
 		
 		if((mTouchMode & TOUCH_MODE_VSCROLL) != 0){
+			Log.i(TAG, "v scroll detal " + (mStartScrollY - focusY)*mScrollYFactor);
 			mViewStartY = (int)(mViewStartY + (mStartScrollY - focusY)*mScrollYFactor );
-			
+			mStartScrollY = focusY - mDayHeader;
 			
 			if(mViewStartY < 0){
 				mViewStartY = 0;
-				
+				mTopEdgeEffect.onPull(detalY/mViewHeight);
 				Log.i(TAG,"mViewStartY < 0 mStartScrolly " + mStartScrollY);
 			}			
 			else if(mViewStartY > mMaxViewStartY){
@@ -464,16 +522,14 @@ public class DayView extends View implements ConstantValue{
 			
 		}
 	    invalidate();
-		
+	}
+	
+	public void doFling(MotionEvent e1, MotionEvent e2, float velocityX,
+				float velocityY) {
 		
 	}
 	
-	void remeasure(int width,int height){
-		setDrawAttribute();
-		mViewStartY = 900;
-		mFirstHourCell = 0;
-		mDayHeader = 0;
-		mViewStartX = 0;
-	}
+
 	
 }
+
